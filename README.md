@@ -9,3 +9,10 @@
 ## How to Run
 ```bash
 python3 detector_full_candidate_name.py iscp_pii_dataset.csv
+```bash
+git init
+git add .
+git commit -m "Initial commit - PII detector project"
+git branch -M main
+git remote add origin https://github.com/bajisk001/pii-detector-redactor.git
+git push -u origin main
