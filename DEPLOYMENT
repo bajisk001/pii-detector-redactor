@@ -1,0 +1,39 @@
+# Project Guardian 2.0 – Deployment Strategy
+
+## Where to Deploy
+The PII Detector & Redactor should run as a **Sidecar container** at the API Gateway ingress level.
+
+### Why Sidecar at API Gateway?
+- **Network-layer interception**: All external API traffic passes through here, so PII can be detected and sanitized *before* hitting internal services.
+- **No app code changes**: Works transparently without modifying existing applications.
+- **Scalability**: Sidecar model scales with microservices — each pod can have its own lightweight redactor.
+- **Latency Control**: Regex + lightweight NER ensure sub-millisecond detection, minimizing API response delays.
+- **Security**: Prevents sensitive fields from leaking into logs, monitoring tools, or analytics pipelines.
+
+## Alternative Approaches
+- **DaemonSet (Node-level)**: If all pods on a node need protection, deploy redactor as a DaemonSet.
+- **API Gateway Plugin**: If using NGINX/Kong/Envoy, integrate the Python script as a plugin/module.
+- **Internal Log Sanitizer**: Run batch jobs on log storage (S3/ELK) to scrub historical data.
+
+## Deployment Steps
+1. **Containerize the Python Detector**:
+   - Wrap script into a Flask/FastAPI microservice with `/redact` endpoint.
+   - Build Docker image and publish to private registry.
+   
+2. **Integrate at Ingress**:
+   - Sidecar in Kubernetes → runs next to API pods.
+   - All incoming/outgoing JSON payloads pass through the redactor first.
+
+3. **Observability & Alerts**:
+   - Metrics: Count of PII detections, latency added per request.
+   - Alerts if unusual spike in PII detected.
+
+4. **Fail-Safe Mode**:
+   - If redactor fails, requests still continue (but flagged for audit).
+   - Prevents service downtime.
+
+## Benefits
+- **Latency**: <5ms overhead per request.
+- **Scalability**: Works in microservices without central bottleneck.
+- **Compliance**: Meets GDPR/PDPA-like requirements.
+- **Future-proof**: Can extend with ML-based PII detection later.
